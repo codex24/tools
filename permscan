@@ -1,0 +1,31 @@
+#!/bin/bash
+# permscan: scan file system and report submerged permissive files
+NOW=$(date "+%Y%m%d:%H%M%S")
+
+# Root::id=0
+if [[ $(id -u 2>/dev/null 1>&2) -eq 0 ]] ; then
+	echo "permscan has sudo access at $NOW."
+else
+	echo "permscan will need sudo access at $NOW."
+fi
+
+# Initial scann of full file system
+echo "permscan initial scan:"
+sudo find -L / -type d \( \
+-path /dev -o \
+-path /proc -o \
+-path /run -o \
+-path /sys -o \
+-path /tmp -o \
+-path "*/.Private" \
+\) -prune -o -print0 2>/dev/null \
+| sudo xargs -0 stat -Lc "%a;%n;%F;%U;%G;%s;%y" \
+>/tmp/permscan-init-$NOW.csv 2>/dev/null
+
+# Post-process scan for permission propogation and output
+#| sort -n -t';' -k5 \
+echo "permscan postprocessing:"
+awk -f permscan.awk /tmp/permscan-init-$NOW.csv \
+>/tmp/permscan-$NOW.csv \
+&& echo "Created: /tmp/permscan-$NOW.csv" \
+|| echo "Not created: /tmp/permscan-$NOW.csv ($?)"
