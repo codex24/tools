@@ -3,11 +3,11 @@
 
 # Init
 NOW=$(date "+%Y%m%d:%H%M%S")
-while getopts "d:" opt; do
+while getopts "hd:" opt; do
 	case $opt in
 		d)
 			depth=$OPTARG ;;
-		h?)
+		h)
 			echo "permscan [-d N]"
 			exit 1 ;;
 		*)
@@ -38,7 +38,7 @@ sudo find -L / -type d \( \
 # Post-process scan for permission propogation and output
 #| sort -n -t';' -k5 \
 echo "permscan postprocessing (depth $depth):"
-awk -v depth=$depth -f permscan.awk /tmp/permscan-init-$NOW.csv \
+awk -v ${depth:+depth=${depth}} -f permscan.awk /tmp/permscan-init-$NOW.csv \
 >/tmp/permscan-$NOW.csv \
 && echo "Created: /tmp/permscan-$NOW.csv" \
 || echo "Not created: /tmp/permscan-$NOW.csv ($?)"
