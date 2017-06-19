@@ -25,7 +25,7 @@ sudo find -L / -type d \( \
 # Post-process scan for permission propogation and output
 #| sort -n -t';' -k5 \
 echo "permscan postprocessing:"
-awk -f permscan.awk /tmp/permscan-init-$NOW.csv \
+awk -v depth=2 -f permscan.awk /tmp/permscan-init-$NOW.csv \
 >/tmp/permscan-$NOW.csv \
 && echo "Created: /tmp/permscan-$NOW.csv" \
 || echo "Not created: /tmp/permscan-$NOW.csv ($?)"

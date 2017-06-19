@@ -3,8 +3,12 @@
 # \( -path /dev -o -path /proc -o -path /run -o -path /sys -o -path /tmp -o -path "*/.Private" \) \
 # -prune -o -print0 2>/dev/null | sudo xargs -0 stat -Lc "%a;%n;%F" 2>/dev/null 
 
-BEGIN	{ FS=";" }
+BEGIN	{ 
+	FS=";"
+	if (depth == "") depth=2
+}
 
+# For every line in input
 {
 	perms[$2]=$1	# Value of local permissions
 	props[$2]=$1	# Initial value of propogated permissions
@@ -51,7 +55,7 @@ END {
 		squawk("end:\tJ=" J "\tprops[J]=" props[J])
 		N=split(J,nodes,"/")	# split the directory name into nodes
 		for (K=N+1; K>1; K-- ) {	# scan the path from right to left
-		squawk("end:\tK=" K)
+			squawk("end:\tK=" K)
 			if (K > N) {
 				P=( props[J] > perms[J] ? props[J] : perms[J] )
 				squawk("end:\tprops[J]=" props[J] "\tperms[J]=" perms[J])
@@ -73,9 +77,12 @@ END {
 	# Report final results
 	format="%s;%s;%s;%s;%s;%s\n"
 	printf format, "_P", "_Perm", "_Prop", "_Type", "_Path", "_Other"
-	for (L in perms)
-		if (L != "")
+	for (L in perms) {
+		if (L == "") continue	# for root special case
+		# if this line is within top depth specfication, then output
+		if (split(L,nodes,"/") <= depth)
 			printf format, ( perms[L] == props[L] ? "" : "*" ), perms[L], props[L], types[L], L, rest[L]
+	}
 	squawk("end: done")
 }
 
