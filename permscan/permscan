@@ -1,8 +1,21 @@
 #!/bin/bash
 # permscan: scan file system and report submerged permissive files
-NOW=$(date "+%Y%m%d:%H%M%S")
 
-# Root::id=0
+# Init
+NOW=$(date "+%Y%m%d:%H%M%S")
+while getopts "d:" opt; do
+	case $opt in
+		d)
+			depth=$OPTARG ;;
+		h?)
+			echo "permscan [-d N]"
+			exit 1 ;;
+		*)
+			echo "Invalid option: -$OPTARG" >&2 ;;
+	esac
+done
+
+# Check for sudo access
 if [[ $(id -u 2>/dev/null 1>&2) -eq 0 ]] ; then
 	echo "permscan has sudo access at $NOW."
 else
@@ -24,8 +37,8 @@ sudo find -L / -type d \( \
 
 # Post-process scan for permission propogation and output
 #| sort -n -t';' -k5 \
-echo "permscan postprocessing:"
-awk -v depth=2 -f permscan.awk /tmp/permscan-init-$NOW.csv \
+echo "permscan postprocessing (depth $depth):"
+awk -v depth=$depth -f permscan.awk /tmp/permscan-init-$NOW.csv \
 >/tmp/permscan-$NOW.csv \
 && echo "Created: /tmp/permscan-$NOW.csv" \
 || echo "Not created: /tmp/permscan-$NOW.csv ($?)"
