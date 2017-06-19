@@ -3,6 +3,8 @@
 
 # Init
 NOW=$(date "+%Y%m%d:%H%M%S")
+THIS=$(readlink -e $0)
+HERE=${THIS%/*}
 while getopts "hd:" opt; do
 	case $opt in
 		d)
@@ -16,11 +18,14 @@ while getopts "hd:" opt; do
 done
 
 # Check for sudo access
-if [[ $(id -u 2>/dev/null 1>&2) -eq 0 ]] ; then
+if [[ $(id -u 2>/dev/null 1>&2) -eq 0 \
+   || $(id -Gn 2>/dev/null 1>&2 | grep -q sudo) ]]
+then
 	echo "permscan has sudo access at $NOW."
-else
-	echo "permscan will need sudo access at $NOW."
-fi
+else {
+	echo "permscan needs sudo access."
+	exit 2
+} fi
 
 # Initial scann of full file system
 echo "permscan initial scan:"
@@ -36,9 +41,11 @@ sudo find -L / -type d \( \
 >/tmp/permscan-init-$NOW.csv 2>/dev/null
 
 # Post-process scan for permission propogation and output
-#| sort -n -t';' -k5 \
-echo "permscan postprocessing (depth $depth):"
-awk -v ${depth:+depth=${depth}} -f permscan.awk /tmp/permscan-init-$NOW.csv \
->/tmp/permscan-$NOW.csv \
-&& echo "Created: /tmp/permscan-$NOW.csv" \
-|| echo "Not created: /tmp/permscan-$NOW.csv ($?)"
+echo "permscan postprocessing (depth ${depth:-2}):"
+awk ${depth:+"-v depth="${depth}} -f ${HERE}/permscan.awk /tmp/permscan-init-${NOW}.csv \
+>/tmp/permscan-${NOW}.csv \
+&& echo "Created: /tmp/permscan-${NOW}.csv" \
+|| echo "Not created: /tmp/permscan-${NOW}.csv ($?)"
+#| sort -n -t';' -k5 >/tmp/permscan-${NOW}.csv \
+
+#eof
