@@ -1,4 +1,4 @@
-# permscan
+# scanperm
 
 This utility scans a host's file system and produces a report that lists the files 
 and directories, their permissions, and the most permissive permissions of any object
@@ -49,17 +49,16 @@ The tail portion of the file name is the timestamp of invocation, where
 
 Example content:
 ```
-Over-permissive?; Permission for this object; Most permissive child; Object type; Object Path; Other Object Attributes
-;1204;1204;regular file;/etc/aliases;root;root;238;2017-06-21 16:24:12.949933999 +0000
-*;1204;755;directory;/etc;root;root;4096;2017-06-21 16:26:32.220497000 +0000
-;1777;1777;directory;/var/crash;root;root;4096;2017-05-15 14:18:44.861531320 +0000
-;1777;1777;directory;/var/lock;root;root;80;2017-06-22 16:09:11.648000000 +0000
-;1777;1777;directory;/var/tmp;root;root;4096;2017-06-21 16:22:19.349164312 +0000
-*;2555;755;directory;/usr/sbin;root;root;4096;2017-06-21 16:24:55.066410599 +0000
-;2755;2755;regular file;/sbin/pam_extrausers_chkpwd;root;shadow;35632;2016-03-16 18:12:32.000000000 +0000
-;2755;2755;regular file;/sbin/unix_chkpwd;root;shadow;35600;2016-03-16 18:12:32.000000000 +0000
-*;2755;755;directory;/etc/alternatives;root;root;4096;2017-06-21 16:26:25.016896999 +0000
-;2775;2775;directory;/var/local;root;staff;4096;2016-04-12 20:14:23.000000000 +0000
+ Over-permissive?; Permission for this object; Most permissive child; Object type; Object Path; Other Object Attributes
+;755;755;directory;/;root;root;4096;2017-06-22 08:40:38.396003884 -0500
+*;4755;755;directory;/bin;root;root;4096;2017-05-20 14:49:42.690145159 -0500
+;700;700;directory;/boot/efi;root;root;4096;1969-12-31 18:00:00.000000000 -0600
+;755;755;directory;/boot/grub;root;root;1024;2017-06-22 08:41:20.000000000 -0500
+;700;700;directory;/boot/lost+found;root;root;12288;2016-12-28 19:12:46.000000000 -0600
+;755;755;directory;/boot;root;root;3072;2017-06-22 08:41:18.000000000 -0500
+;755;755;directory;/cdrom;root;root;4096;2016-12-28 19:18:54.635830246 -0600
+;700;700;directory;/etc/.git;root;root;4096;2017-06-22 08:44:06.044012426 -0500
+;755;755;directory;/etc/.java;root;root;4096;2017-05-03 14:50:05.591640858 -0500
 ```
 **Please note:** The first line of the file is a column header line, not live data.
 
@@ -76,24 +75,31 @@ Utility results may be compared via 'diff' or visual diff tools, as the output i
 For example:
 ```
 $ ll permscan-*
--rw-rw-r-- 1 kevin kevin     83160 Jun 22 13:23 permscan-20170622:132256.csv
--rw-rw-r-- 1 kevin kevin     83160 Jun 22 13:26 permscan-20170622:132556.csv
--rw-rw-r-- 1 kevin kevin 116880720 Jun 22 13:26 permscan-init-20170622:132556.csv
+-rw-rw-r-- 1 kevin kevin     24325 Jun 22 14:02 permscan-20170622:140129.csv
+-rw-rw-r-- 1 kevin kevin     24325 Jun 22 15:16 permscan-20170622:151513.csv
+-rw-rw-r-- 1 kevin kevin 117006812 Jun 22 15:15 permscan-init-20170622:151513.csv
 kevin@carnaro:/tmp 
-$ diff permscan-20170622:132256.csv permscan-20170622:132556.csv
-377c377
-< ;444;444;regular empty file;/etc/mtab;root;root;0;2017-06-22 13:23:08.399967444 -0500
+$ diff permscan-20170622:140129.csv permscan-20170622:151513.csv
+46c46
+< ;755;755;directory;/etc/cups;root;lp;4096;2017-06-22 13:58:39.504031713 -0500
 ---
-> ;444;444;regular empty file;/etc/mtab;root;root;0;2017-06-22 13:26:09.187972897 -0500
-497c497
-< ;644;644;regular file;/etc/wgetrc;root;root;4942;2016-06-14 03:18:07.000000000 -0500
+> ;755;755;directory;/etc/cups;root;lp;4096;2017-06-22 15:09:28.108096839 -0500
+192c192
+< *;775;700;directory;/home/kevin;kevin;kevin;16384;2017-06-22 14:01:10.956036281 -0500
 ---
-> ;664;664;regular file;/etc/wgetrc;root;root;4942;2016-06-14 03:18:07.000000000 -0500
-939c939
-< ;1777;1777;directory;/var/tmp;root;root;4096;2017-06-22 13:22:52.755966973 -0500
+> *;775;700;directory;/home/kevin;kevin;kevin;16384;2017-06-22 15:09:45.668097368 -0500
+278c278
+< ;3777;3777;directory;/var/crash;root;whoopsie;4096;2017-06-22 08:44:50.040014236 -0500
 ---
-> ;1777;1777;directory;/var/tmp;root;root;4096;2017-06-22 13:25:27.727971646 -0500
-```
+> ;3777;3777;directory;/var/crash;root;whoopsie;4096;2017-06-22 14:03:25.548000077 -0500
+287c287
+< ;755;755;directory;/var/run;root;root;1420;2017-06-22 11:14:32.547734754 -0500
+---
+> ;755;755;directory;/var/run;root;root;1420;2017-06-22 14:16:03.420000194 -0500
+290c290
+< ;1777;1777;directory;/var/tmp;root;root;4096;2017-06-22 14:01:32.736036937 -0500
+---
+> ;1777;1777;directory;/var/tmp;root;root;4096;2017-06-22 15:15:02.820106933 -0500```
 
 ___
 <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
