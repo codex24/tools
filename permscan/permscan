@@ -30,6 +30,7 @@ else {
 
 # Initial scann of full file system
 echo "permscan initial scan:"
+rm -f /tmp/permscan-init-*.csv 2>/dev/null	# housekeeping
 sudo find -L / -type d \( \
 -path /dev -o \
 -path /proc -o \
@@ -44,7 +45,7 @@ sudo find -L / -type d \( \
 # Post-process scan for permission propogation and output
 echo "permscan postprocessing (depth ${depth}):"
 awk -v depth=${depth} -f ${HERE}/permscan.awk /tmp/permscan-init-${NOW}.csv \
-| sort -n -t';' -k5 >/tmp/permscan-${NOW}.csv \
+| LC_ALL=C sort -st';' -k5 >/tmp/permscan-${NOW}.csv \
 && echo "Created: /tmp/permscan-${NOW}.csv" \
 || echo "Not created: /tmp/permscan-${NOW}.csv ($?)"
 
