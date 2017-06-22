@@ -3,7 +3,6 @@
 This utility scans a host's file system and produces a report that lists the files 
 and directories, their permissions, and the most permissive permissions of any object
 below them in the file system heirarchy.
-It was created in response to [DEVO-98 "Report on file system permissions"](https://chatid.atlassian.net/browse/DEVO-98). 
 
 ## Uses
 The two use cases for this utility are:
@@ -26,23 +25,21 @@ The shell script and the AWK script should be installed in the same directory as
 For example:
 ```
 $ git clone git@github.com:chatid/terraform-prosody.git /tmp/terraform-prosody
-$ sudo install /tmp/terraform-prosody/tools/permscan/* /usr.local/bin
+$ sudo install /tmp/terraform-prosody/tools/permscan/* /usr/local/bin
 $ rm -rf /tmp/terraform-prosody
 ```
 ### Invocation
 The utility is designed to be run repeatedly, e.g. by a cron job, putting output into the host's _/tmp_ directory. 
 
->permscan [-d N]
+> permscan [-d N]
 
 It only has one parameter, which is optional, to specify the depth into the file system for reporting. 
 The default for that value on 'N' is "2", which implies paths of the form, "/x/y".
 
 ### Using Results
-The output file, with a file path of
-
-> /tmp/permscan-<YYYYMMDD>:<hhmmss>.csv
-
-is in Comma Separated Values format, with semi-colons (';') as separators. The tail portion of the file name is the timestamp of invocation, where
+The output file, with a file path of `/tmp/permscan-<YYYYMMDD>:<hhmmss>.csv`
+is in Comma Separated Values format with semi-colons (';') as separators.
+The tail portion of the file name is the timestamp of invocation, where 
 - YYYY: year
 - MM: 0-padded month
 - DD: 0-padded day-of-month
@@ -64,11 +61,15 @@ Over-permissive?; Permission for this object; Most permissive child; Object type
 *;2755;755;directory;/etc/alternatives;root;root;4096;2017-06-21 16:26:25.016896999 +0000
 ;2775;2775;directory;/var/local;root;staff;4096;2016-04-12 20:14:23.000000000 +0000
 ```
+**Please note:** The first line of the file is a column header line, not live data.
+
 #### Direct Viewing
 This content can be read and parsed by any spread sheet tool that can read CSV data, including,
-* Excel (Windows)
+* Excel (Windows & Mac)
 * LibreOffice Calc (Linux)
 * Google Sheets (web)
+
+Be sure to freeze the header line in the viewer app before attempting to sort any columns.
 
 #### Iterative Comparison
 Utility results may be compared via 'diff' or visual diff tools, as the output is sorted on the path field and is deterministically ordered.
@@ -93,3 +94,10 @@ $ diff permscan-20170622:132256.csv permscan-20170622:132556.csv
 ---
 > ;1777;1777;directory;/var/tmp;root;root;4096;2017-06-22 13:25:27.727971646 -0500
 ```
+
+___
+<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+<img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/80x15.png" /></a>
+<br />This work is licensed under a 
+<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+Creative Commons Attribution-ShareAlike 4.0 International License</a>.
