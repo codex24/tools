@@ -1,4 +1,4 @@
-# scanperm
+# permscan
 
 This utility scans a host's file system and produces a report that lists the files 
 and directories, their permissions, and the most permissive permissions of any object
