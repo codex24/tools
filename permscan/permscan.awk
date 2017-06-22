@@ -107,8 +107,9 @@ END {
 	printf format, " Over-permissive?", " Permission for this object", " Most permissive child", " Object type", " Object Path", " Other Object Attributes"
 	for (L in perms) {
 		if (L == "") continue	# for root special case
-		# if this line is within top depth specfication, then output
-		if (split(L,nodes,"/") <= depth)
+		# if this line is within top depth specfication and is directory, then output
+		if ( split(L,nodes,"/") <= depth \
+		   && types[L] == "directory" )
 			printf format, ( perms[L] == props[L] ? "" : "*" ), perms[L], props[L], types[L], L, rest[L]
 	}
 	squawk("end: done")
