@@ -16,6 +16,7 @@ while getopts "hd:" opt; do
 			echo "Invalid option: -$OPTARG" >&2 ;;
 	esac
 done
+depth=${depth:-2}	# default depth value if not set by parm, 2 => /x/y
 
 # Check for sudo access
 if [[ $(id -u 2>/dev/null 1>&2) -eq 0 \
@@ -41,11 +42,10 @@ sudo find -L / -type d \( \
 >/tmp/permscan-init-$NOW.csv 2>/dev/null
 
 # Post-process scan for permission propogation and output
-echo "permscan postprocessing (depth ${depth:-3}):"
-awk ${depth:+-v depth=${depth}} -f ${HERE}/permscan.awk /tmp/permscan-init-${NOW}.csv \
->/tmp/permscan-${NOW}.csv \
+echo "permscan postprocessing (depth ${depth}):"
+awk -v depth=${depth} -f ${HERE}/permscan.awk /tmp/permscan-init-${NOW}.csv \
+| sort -n -t';' -k5 >/tmp/permscan-${NOW}.csv \
 && echo "Created: /tmp/permscan-${NOW}.csv" \
 || echo "Not created: /tmp/permscan-${NOW}.csv ($?)"
-#| sort -n -t';' -k5 >/tmp/permscan-${NOW}.csv \
 
 #eof
