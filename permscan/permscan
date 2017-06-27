@@ -10,7 +10,7 @@ while getopts "hd:" opt; do
 		d)
 			depth=$OPTARG ;;
 		h)
-			echo "permscan [-d N]"
+			echo "permscan [-d N]" >&2
 			exit 1 ;;
 		*)
 			echo "Invalid option: -$OPTARG" >&2 ;;
@@ -18,35 +18,36 @@ while getopts "hd:" opt; do
 done
 depth=${depth:-2}	# default depth value if not set by parm, 2 => /x/y
 
-# Check for sudo access
+# Check for sudo access: am root or in sudo group?
 if [[ $(id -u 2>/dev/null 1>&2) -eq 0 \
    || $(id -Gn 2>/dev/null 1>&2 | grep -q sudo) ]]
 then
-	echo "permscan has sudo access at $NOW."
+	echo "permscan has sudo access at $NOW." >&2
 else {
-	echo "permscan needs sudo access."
+	echo "permscan needs sudo access." >&2
 	exit 2
 } fi
 
-# Initial scann of full file system
-echo "permscan initial scan:"
+# Initial scan of full file system
+echo "permscan initial scan:" >&2
 rm -f /tmp/permscan-init-*.csv 2>/dev/null	# housekeeping
-sudo find -L / -type d \( \
--path /dev -o \
--path /proc -o \
--path /run -o \
--path /sys -o \
--path /tmp -o \
--path "*/.Private" \
+sudo find -L / \( \
+	-path /dev -o \
+	-path /proc -o \
+	-path /run -o \
+	-path /sys -o \
+	-path /tmp -o \
+	-path "*/.Private" \
 \) -prune -o -print0 2>/dev/null \
 | sudo xargs -0 stat -Lc "%a;%n;%F;%U;%G;%s;%y" \
 >/tmp/permscan-init-$NOW.csv 2>/dev/null
 
 # Post-process scan for permission propogation and output
-echo "permscan postprocessing (depth ${depth}):"
+echo "permscan postprocessing (depth ${depth}):" >&2
 awk -v depth=${depth} -f ${HERE}/permscan.awk /tmp/permscan-init-${NOW}.csv \
 | LC_ALL=C sort -st';' -k5 >/tmp/permscan-${NOW}.csv \
-&& echo "Created: /tmp/permscan-${NOW}.csv" \
-|| echo "Not created: /tmp/permscan-${NOW}.csv ($?)"
+&& ( echo "Created: /tmp/permscan-${NOW}.csv" >&2; \
+if [[ ! -t 1 ]]; then echo "/tmp/permscan-${NOW}.csv"; fi) \
+|| echo "Not created: /tmp/permscan-${NOW}.csv ($?)" 
 
 #eof

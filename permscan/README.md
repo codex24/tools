@@ -1,4 +1,4 @@
-# scanperm
+# permscan
 
 This utility scans a host's file system and produces a report that lists the files 
 and directories, their permissions, and the most permissive permissions of any object
@@ -35,6 +35,22 @@ The utility is designed to be run repeatedly, e.g. by a cron job, putting output
 
 It only has one parameter, which is optional, to specify the depth into the file system for reporting. 
 The default for that value on 'N' is "2", which implies paths of the form, "/x/y".
+
+The utility produces several informational messages as it runs, which are sent to stderr.
+When run in a CLI pipeline, it produces the name of the output file on stdout so that subsequient commands may access that name directly.
+
+```
+$ ./permscan
+permscan has sudo access at 20170627:153041.
+permscan initial scan:
+permscan postprocessing (depth 2):
+Created: /tmp/permscan-20170627:153041.csv
+$ ./permscan 2>/dev/null | od -a
+0000000   /   t   m   p   /   p   e   r   m   s   c   a   n   -   2   0
+0000020   1   7   0   6   2   7   :   1   5   3   3   0   3   .   c   s
+0000040   v  nl
+0000042
+```
 
 ### Using Results
 The output file, with a file path of `/tmp/permscan-<YYYYMMDD>:<hhmmss>.csv`
@@ -78,7 +94,6 @@ $ ll permscan-*
 -rw-rw-r-- 1 kevin kevin     24325 Jun 22 14:02 permscan-20170622:140129.csv
 -rw-rw-r-- 1 kevin kevin     24325 Jun 22 15:16 permscan-20170622:151513.csv
 -rw-rw-r-- 1 kevin kevin 117006812 Jun 22 15:15 permscan-init-20170622:151513.csv
-kevin@carnaro:/tmp 
 $ diff permscan-20170622:140129.csv permscan-20170622:151513.csv
 46c46
 < ;755;755;directory;/etc/cups;root;lp;4096;2017-06-22 13:58:39.504031713 -0500
@@ -99,11 +114,5 @@ $ diff permscan-20170622:140129.csv permscan-20170622:151513.csv
 290c290
 < ;1777;1777;directory;/var/tmp;root;root;4096;2017-06-22 14:01:32.736036937 -0500
 ---
-> ;1777;1777;directory;/var/tmp;root;root;4096;2017-06-22 15:15:02.820106933 -0500```
-
-___
-<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
-<img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/80x15.png" /></a>
-<br />This work is licensed under a 
-<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
-Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+> ;1777;1777;directory;/var/tmp;root;root;4096;2017-06-22 15:15:02.820106933 -0500
+```
