@@ -31,7 +31,9 @@ $ rm -rf /tmp/terraform-prosody
 ### Invocation
 The utility is designed to be run repeatedly, e.g. by a cron job, putting output into the host's _/tmp_ directory. 
 
-> permscan [-d N]
+```
+$ permscan [-d N]
+```
 
 It only has one parameter, which is optional, to specify the depth into the file system for reporting. 
 The default for that value on 'N' is "2", which implies paths of the form, "/x/y".
@@ -50,6 +52,18 @@ $ ./permscan 2>/dev/null | od -a
 0000020   1   7   0   6   2   7   :   1   5   3   3   0   3   .   c   s
 0000040   v  nl
 0000042
+```
+### Debugging
+The utility can be made to emit much more verbose messages during operation for the purpose of debuigging. 
+This is triggered by the presence of an environment variable, "DBUG", with any non-null value, but some values will produce more output than the basic level, as follows:
+
+* DBUG=1 is base level messages
+* DBUG=2 includes messages from within control stuctures
+* DBUG=3 includes messages from function calls
+
+A typical debugging invocation would be:
+```
+$ BUG=2 ./permscan >permscan.out 2>&1; vim permscan.out
 ```
 
 ### Using Results

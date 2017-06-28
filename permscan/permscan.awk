@@ -38,19 +38,18 @@
 #   perms: object file system permissions, indexed by path
 #   props: greatest propogated permissions from childen, indexed by path
 #   leaves: counts of path references where 1=>leaf, indexed by path
-#   nodes: temporary holder for path elements, indexed by 1-based ascending integers
+#   leafsort: verified & sorted copy of leaves, indexed by 1-based integers
+#   nodes: temporary holder for path elements, indexed by 1-based integers
 #   rest: the remainder of the input data for an object after $3, indexed by path
 
 # Initialization ("begin:")
 BEGIN	{ 
-	FS=";"; # CSV format using delimiter ';', as some file names contain ','
-	if ("DBUG" in ENVIRON) DBUG=1	# capture initial debugging mode
+	FS=";"  # CSV format using delimiter ';', as some file names contain ','
+	if ("DBUG" in ENVIRON) DBUG=ENVIRON["DBUG"] # capture debugging level
 	# set default or adjust passed reporting depth
-	if (depth == "") 
-		depth=3 	# => "find / -depth 2 ..."
-	else
-		depth+=1	# find depth n => split tokens n+1
-	squawk("begin:\tdepth=" depth "\tDBUG=" DBUG )
+	if (! depth)    depth=3 	# default, equivalent to "find / -depth 2 ..."
+	else            depth+=1	# find depth n => split tokens n+1
+	squawk("begin:\tdepth=" depth "\tDBUG=" DBUG, 1)
 }
 
 # For every line in input ("every:")
@@ -62,7 +61,7 @@ BEGIN	{
 	perms[$2]=$1	# Value of local permissions
 	props[$2]=$1	# Initial value of propogated permissions
 	types[$2]=$3	# capture the object type
-	squawk("every:\tpath=" $2 "\tperms[path]=" $1)
+	squawk("every:\tpath=" $2 "\tperms[path]=" $1, 1)
 }
 
 # When the input line describes a directory ("dirs:")
@@ -77,11 +76,11 @@ $3 ~ "directory" {
 			continue    # no further processing
 		} else	path=path "/" nodes[I]  # accumulate path to count
 		leaves[path] += 1   # increment the visit count for this path
-		squawk("dirs:\tI=" I "\tpath=" path "\tleaves[path]=" leaves[path])
-		# capture remaining fields as single value
-		rest[$2]=$0; sub(/^[^;]*;[^;]*;[^;]*;/,"",rest[$2])
-        squawk("files:\trest=" rest[$2])
+		squawk("dirs:\tI=" I "\tpath=" path "\tleaves[path]=" leaves[path], 2)
 	}
+    # capture remaining fields as single value
+    rest[$2]=$0; sub(/^[^;]*;[^;]*;[^;]*;/,"",rest[$2])
+    squawk("dirs:\trest=" rest[$2], 1)
 }
 
 # When the input line describes anything not a directory ("files:")
@@ -91,11 +90,11 @@ $3 !~ "directory" {
     # propogate the object's permissions to its host directory
     dir=substr($2, 1, match($2, /\/[^\/]*$/) -1)    # crop the path to this
 	perm=laxest($1, props[dir])     # accumulate file permissions
-	squawk("files:\tfile=" $2 "\tdir=" dir "\tprops[dir]=" props[dir] "\tperm=" perm)
+	squawk("files:\tfile=" $2 "\tdir=" dir "\tprops[dir]=" props[dir] "\tperm=" perm, 1)
 	props[dir]=perm # capture computed permission value to host propogation entry
 	# capture remaining fields as single value
 	rest[$2]=$0; sub(/^[^;]*;[^;]*;[^;]*;/,"",rest[$2])
-    squawk("files:\trest=" rest[$2])
+    squawk("files:\trest=" rest[$2], 1)
 }
 
 # Digest and report ("end:")
@@ -105,39 +104,48 @@ $3 !~ "directory" {
 #   and then produce output for depth level of directories.
 END {
 	if ("/" in leaves) leaves["/"]=1    # root is a special case
+    J=0     # initialize serialization index
 	# prune out the non-leaves, complete pruning before scan
-	for (I in leaves) 
-		if (leaves[I] != 1) delete leaves[I]
-    squawk("end:\tleaves verified")
-	# leaves now only contains leaf directory paths in index, all values=1
+	for (I in leaves) {
+        # I is a path
+		if (leaves[I] != 1) continue    # no futher processing if not leaf
+        leafsort[++J]=I     # serialize the leaves
+        squawk("loop I:\tI=" I "\tJ=" J \
+            " \tleafsort[J]=" leafsort[J] "\tleaves[I]=" leaves[I], 2)
+    }
+    leafsort[0]=asort(leafsort)   # sort the serialized leaves, keep count in 0th index
+    squawk("end:\tleaves verified and serialized to leafsort", 1)
+
+	# leafsort contains verified leaf directory paths in values, indexed in sort order
 	# rescan the true leaves to propogate the most permissive permissions upstream
-	for (J in leaves) {
-        # split the directory name into nodes disregarding the first, keep count of elements in N
-		N=split(substr(J,2),nodes,"/")
-		squawk("end:\tJ=" J "\tprops[J]=" props[J] "\tN=" N \
-            "\tnodes[1]=" nodes[1] "\tnodes[N]=" nodes[N])
+	for (J=1; J<=leafsort[0]; J++) {
+        # split the directory name into nodes disregarding first, keep count of elements in N
+		N=split(substr(leafsort[J], 2), nodes, "/")
+		squawk("end:\tJ=" J "\tleafsort[J]=" leafsort[J]"\tprops[leafsort[J]]=" \
+            props[leafsort[J]] "\tN=" N "\tnodes[1]=" nodes[1] "\tnodes[N]=" nodes[N], 2)
 	    # propogate permissions for the paths from root to each path element
 		for ( K=N; K>=1; K-- ) {	# scan the path from right to left
-			squawk("end:\tK=" K " \tnodes[K]=" nodes[K])
-            # head is built up rather than matched, due to specials embedded in path names
-            for (L=1; L<=K; L++) {
-			    head=head "/" nodes[L] # append this path element to accumulated path head
-                squawk("loop L:\thead=" head "\tnodes[L]" nodes[L])
+			squawk("loop K:\tK=" K " \tnodes[K]=" nodes[K], 2)
+            # parent is built up rather than matched, due to specials embedded in path names
+            for (L=1; L<K; L++) {
+			    parent=parent "/" nodes[L] # append this path element to accumulated path parent
+                squawk("loop L:\tparent=" parent "\tnodes[L]=" nodes[L], 2)
             }
-            # tail is accumulated
-			tail=head "/" nodes[K] 
-			squawk("loop K:\thead=" head "\ttail=" tail)
+            # child is accumulated
+			child=parent "/" nodes[K] 
+			squawk("loop K:\tparent=" parent "\tchild=" child, 2)
             # compare propogated permissions of parent to those of child 
-			perm=laxest(props[head], props[tail]) 
-		    props[head]=perm	# write greatest permission into parent's propogation entry
-			squawk("loop K:\tprops[head]=" props[head] "\tprops[head/nodes[K]]=" \
-                props[head "/" nodes[K]] "\tperm=" perm)
+			perm=laxest(props[parent], props[child]) 
+		    props[parent]=perm	# write greatest permission into parent's propogation entry
+			squawk("loop K:\tprops[parent]=" props[parent] \
+                "\tprops[child]=" props[child] "\tperm=" perm, 2)
+		    # reset iterators at end of loop
+    		parent=""; child=""; perm=0
 		}
-		# reset iterators at end of loop
-		head=""; tail=""; perm=0
-		squawk("end: cleared")
+		squawk("end: cleared", 2)
 	}
-    squawk("end:\tleaves propogated")
+    squawk("end:\tleaves propogated", 1)
+
 	# report final results
 	format="%s;%s;%s;%s;%s;%s\n"	# a printf format string
 	# output header row, values prefixed with space to sort to top
@@ -151,23 +159,32 @@ END {
 	# for all paths in input, consider for output
 	for (M in perms) {
 		if (M == "") continue	# for root special case
-		# if this line is within top depth specfication and is a directory, then output
-		if ( split(M,nodes,"/") <= depth && types[M] == "directory" )
-			printf format,
-			( props[M] > perms[M] ? "*" : "" ),
-			perms[M],
-			props[M],
-			types[M],
-			M,
-			rest[M]
+		# if this path is a directory, then output and is within top depth specfication
+		if ( types[M] == "directory" && split(M,nodes,"/") <= depth )
+            # then print the formatted output 
+			printf format,  
+                ( props[M] > perms[M] ? "*" : "" ),
+                perms[M],
+                props[M],
+                types[M],
+                M,
+                rest[M]
 	}
-	squawk("end: done")
+	squawk("end: done", 1)
 }
 
 # Local Functions
 # Function to emit messages only when debugging is active
-function squawk (string) {
-	if (DBUG) print string > "/dev/stderr"
+function squawk (string, sev) {
+    # string: string to print; sev: an optional debug severity level
+    # if the current debugging level is at or above
+    # the severity of the proposed message, then emit the message.
+    #   sev 0 should always emit.
+    #   sev 1 is base level messages
+    #   sev 2 is messages from within control stuctures
+    #   sev 3 is messages from function calls
+    if (! sev)  sev=1   # default severity if not provided
+	if (DBUG >= sev) print string " (" sev ")" > "/dev/stderr"
 }
 
 # Function to do permission comparisons
@@ -180,7 +197,7 @@ function laxest (A, B,      C) {
     C=( reverse(A) > reverse(B) ? A : B )	# find greatest permission
     # if 4th digit present, move back where it belongs
     if (length(C) == 4) C=substr(C,4,1) substr(C,1,3)
-    squawk("laxest:\tof " A " and " B " is " C)
+    squawk("laxest:\tof " A " and " B " is " C, 3)
 	return C    # return greatest permission
 }
 
@@ -189,7 +206,7 @@ function reverse(fore,     back) {
     # fore: parameter, back: local var
     for (I=1; I<=length(fore); I++)
         back=substr(fore,I,1) back  # accumulate the reversed string
-    squawk("reverse:\tof " fore " is " back)
+    squawk("reverse:\tof " fore " is " back, 3)
     return back     # return reversed string
 }
 
