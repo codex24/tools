@@ -10,7 +10,7 @@ The two use cases for this utility are:
 * Over time, identify filesystem permissions that change through iterative comparison of output.
 
 ## Description
-The artifacts that implement this utility are checked into [github:chatid/terraform-prosody/tools/permscan/](https://github.com/chatid/terraform-prosody/tree/DEVO-98/tools/permscan).
+The artifacts that implement this utility are checked into [github:codex24/tools/](https://github.com/codex24/tools/).
 
 ### Artifacts
 The utility is provided as two artifacts:
@@ -24,9 +24,9 @@ The utility produces output in the host's _/tmp_ directory.
 The shell script and the AWK script should be installed in the same directory as the shell script expect to find the AWK script there, but where that directory is located is irrelevant. On an **Debian or Ubuntu** system, the expected directory would be _/usr/local/bin_.
 For example:
 ```
-$ git clone git@github.com:chatid/terraform-prosody.git /tmp/terraform-prosody
-$ sudo install /tmp/terraform-prosody/tools/permscan/* /usr/local/bin
-$ rm -rf /tmp/terraform-prosody
+$ git clone git@github.com:codex24/tools.git /tmp
+$ sudo install /tmp/tools/permscan/* /usr/local/bin
+$ rm -rf /tmp/tools
 ```
 ### Invocation
 The utility is designed to be run repeatedly, e.g. by a cron job, putting output into the host's _/tmp_ directory. 
@@ -54,7 +54,7 @@ $ ./permscan 2>/dev/null | od -a
 0000042
 ```
 ### Debugging
-The utility can be made to emit much more verbose messages during operation for the purpose of debuigging. 
+The utility can be made to emit much more verbose messages during operation for the purpose of debugging. 
 This is triggered by the presence of an environment variable, "DBUG", with any non-null value, but some values will produce more output than the basic level, as follows:
 
 * DBUG=1 is base level messages
