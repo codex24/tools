@@ -25,7 +25,7 @@ The shell script and the AWK script should be installed in the same directory as
 For example:
 ```
 $ git clone git@github.com:codex24/tools.git /tmp
-$ sudo install /tmp/tools/permscan/* /usr/local/bin
+$ sudo install /tmp/tools/permscan/permscan* /usr/local/bin
 $ rm -rf /tmp/tools
 ```
 ### Invocation
@@ -63,7 +63,7 @@ This is triggered by the presence of an environment variable, "DBUG", with any n
 
 A typical debugging invocation would be:
 ```
-$ BUG=2 ./permscan >permscan.out 2>&1; vim permscan.out
+$ DBUG=2 ./permscan >permscan.out 2>&1; vim permscan.out
 ```
 
 ### Using Results
